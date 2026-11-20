@@ -10,6 +10,25 @@ jobs:
   backend:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: deskops
+          POSTGRES_USER: deskops
+          POSTGRES_PASSWORD: test_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U deskops -d deskops"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://deskops:test_only_password@localhost:5432/deskops?schema=public
+      JWT_SECRET: ci-only-secret-for-integration-tests-not-production
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
@@ -31,6 +50,14 @@ jobs:
 
       - name: Check TypeScript
         run: npm run typecheck
+        working-directory: backend
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy --config prisma7.config.ts
+        working-directory: backend
+
+      - name: Run tenant isolation test
+        run: npm test
         working-directory: backend
 
       - name: Build Docker image

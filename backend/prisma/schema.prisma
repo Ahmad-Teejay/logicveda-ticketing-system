@@ -19,6 +19,7 @@ model Organisation {
   name      String
   createdAt DateTime @default(now())
   users     User[]
+  tickets   Ticket[]
 }
 
 model User {
@@ -32,4 +33,39 @@ model User {
   organisation   Organisation @relation(fields: [organisationId], references: [id])
 
   @@index([organisationId])
+}
+
+enum TicketStatus {
+  NEW
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  ON_HOLD
+  RESOLVED
+  CLOSED
+}
+
+model Ticket {
+  id             String       @id @default(uuid())
+  organisationId String
+  propertyId     String
+  unitId         String
+  residentId     String
+  title          String
+  description    String
+  category       String?
+  priority       String?
+  status         TicketStatus @default(NEW)
+  assigneeId     String?
+  version        Int          @default(0)
+  resolvedAt     DateTime?
+  isBlocking     Boolean      @default(false)
+  customFields   Json?
+  mergedIntoId   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organisation   Organisation @relation(fields: [organisationId], references: [id])
+
+  @@index([organisationId, status])
+  @@index([organisationId, assigneeId])
 }
